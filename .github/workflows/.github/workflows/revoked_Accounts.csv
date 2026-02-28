@@ -1,0 +1,45 @@
+
+name: Generate Revoked Accounts Report
+
+on:
+  workflow_dispatch:       # Run manually
+  schedule:
+    - cron: "0 2 * * *"    # Run daily at 2 AM UTC
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install pandas
+
+      - name: Generate revocations file
+        run: |
+          python scripts/filter_revoked.py \
+            data/source/YourFileName.csv \
+            data/outputs/Revoked_Accounts.csv
+
+      - name: Commit & push
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add data/outputs/Revoked_Accounts.csv
+          if git diff --cached --quiet; then
+            echo "No changes"
+          else
+            git commit -m "Automated revoked accounts update"
+            git push
+          fi
+
